@@ -1,37 +1,44 @@
 import Link from "next/link";
-import Image from "next/image";
-import { getHighlightedPosts } from "@/lib/mdx";
+import { getPostsBySection } from "@/lib/mdx";
 import NavBar from "@/components/NavBar";
+import { notFound } from "next/navigation";
+import { BLOG_SECTIONS } from "@/config";
 
-export default function Home() {
-  const posts = getHighlightedPosts();
+export async function generateStaticParams() {
+  return BLOG_SECTIONS.map((section) => ({
+    section: section.toLowerCase(),
+  }));
+}
+
+export default async function SectionPage({
+  params,
+}: {
+  params: Promise<{ section: string }>;
+}) {
+  const { section } = await params;
+  const decodedSection = decodeURIComponent(section);
+  
+  const posts = getPostsBySection(decodedSection);
+  
+  const validSections = BLOG_SECTIONS.map(s => s.toLowerCase());
+  if (posts.length === 0 && !validSections.includes(decodedSection.toLowerCase())) {
+    notFound();
+  }
 
   return (
     <>
-      <div className="relative w-full h-[50vh]">
-        <Image 
-          src="/cover.png" 
-          alt="Vintage book on a desk" 
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black/10 mix-blend-multiply" />
-      </div>
-
       <NavBar />
-
       <div className="max-w-2xl mx-auto px-6 w-full flex flex-col gap-8 pb-12">
-        <section>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Editor's Picks</h1>
-          <p className="text-muted-foreground">
-            A curated selection of highlighted writings.
+        <header className="mb-8 border-b border-border pb-8">
+          <h1 className="text-4xl font-bold tracking-tight capitalize">{decodedSection}</h1>
+          <p className="text-muted-foreground mt-2">
+            Posts written under the {decodedSection} category.
           </p>
-        </section>
+        </header>
 
-        <section className="mt-4">
+        <section>
           {posts.length === 0 ? (
-            <p className="text-muted-foreground italic">No highlighted posts found.</p>
+            <p className="text-muted-foreground italic">No posts found in this section yet.</p>
           ) : (
             <div className="flex flex-col gap-8">
               {posts.map((post) => (
